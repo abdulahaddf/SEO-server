@@ -30,6 +30,9 @@ let usersCollection = client.db("SEOpage").collection("Users");
 
 async function run() {
   try {
+    await client.connect();
+    db = client.db("SEOpage");
+    bucket = new GridFSBucket(db, { bucketName: "files" });
       // API to get all users
 app.get("/users", async (req, res) => {
   try {
@@ -40,14 +43,15 @@ app.get("/users", async (req, res) => {
   }
 });
 
-// File upload middleware setup
-const storage = multer.memoryStorage(); // Use memory storage to keep file data in memory
-const upload = multer({ storage }).array("files"); // Use .array() to handle multiple files
 
-// API to upload multiple files to MongoDB using GridFS, associated with a user
+const storage = multer.memoryStorage(); 
+const upload = multer({ storage }).array("files"); 
+
+// API to upload multiple files
 app.post("/upload/:userId", upload, (req, res) => {
+  
   console.log(req)
-const userId = req.params.userId; // Get userId from URL parameter
+const userId = req.params.userId; 
 if (!userId || !ObjectId.isValid(userId)) {
   return res.status(400).send("Invalid user ID");
 }
@@ -58,20 +62,20 @@ if (!req.files || req.files.length === 0) {
 
 const fileIds = [];
 
-// Iterate over each uploaded file and store it in GridFS with userId metadata
+
 req.files.forEach((file) => {
   const metadata = {
-    userId: new ObjectId(userId), // Store the userId in the file's metadata
+    userId: new ObjectId(userId), 
     originalName: file.originalname,
   };
 
-  // Create a stream to upload the file to MongoDB GridFS
+  
   const uploadStream = bucket.openUploadStream(file.originalname, {
     contentType: file.mimetype,
     metadata,
   });
 
-  // Upload file data to GridFS
+
   uploadStream.end(file.buffer);
 
   uploadStream.on("finish", () => {
@@ -84,7 +88,7 @@ req.files.forEach((file) => {
   });
 });
 
-// Send a response once all files have been uploaded
+
 res.status(200).send({
   message: "Files uploaded successfully!",
   fileIds,
