@@ -93,25 +93,22 @@ res.status(200).send({
 
 // API to fetch all files for a specific user by userId
 app.get("/files/:userId", async (req, res) => {
-const userId = req.params.userId; // Get userId from URL parameter
-//   console.log(userId)
-if (!userId) {
-  return res.status(400).send("Invalid user ID");
-}
+  const userId = req.params.userId;
 
-try {
-  // Find files associated with the user
-  const files = await bucket
-    .find({ "metadata.userId": new ObjectId(userId) })
-    .toArray();
-    
- 
+  if (!ObjectId.isValid(userId)) {
+    return res.status(400).send({ message: "Invalid user ID format" });
+  }
 
-  // Send the list of file metadata to the client
-  res.status(200).json(files.length);
-} catch (error) {
-  res.status(500).send({ message: "Error fetching files", error: error.message });
-}
+  try {
+    const files = await bucket
+      .find({ "metadata.userId": new ObjectId(userId) })
+      .toArray();
+
+    res.status(200).json({ count: files.length, files });
+  } catch (error) {
+    console.error("Error fetching files:", error.message); // Detailed error logging
+    res.status(500).send({ message: "Error fetching files", error: error.message });
+  }
 });
 
     // Send a ping to confirm a successful connection
